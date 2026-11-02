@@ -1,9 +1,8 @@
-import React, { ReactNode } from 'react'
+"use client";
 
-export default function Providers({ children }: { children:ReactNode }) {
-  return (
-    <div>
-      {children}
-    </div>
-  )
+import type { ReactNode } from "react";
+import QueryProvider from "./Quary.Provider";
+
+export default function Providers({ children }: { children: ReactNode }) {
+  return <QueryProvider>{children}</QueryProvider>;
 }
