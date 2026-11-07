@@ -20,7 +20,11 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { GoogleLogin } from "@react-oauth/google";
 import { useGoogleLogin, useRegister } from "@/hooks";
-import { type RegisterFormData, RegisterZodSchema } from "@/validation";
+import {
+  type RegisterFormData,
+  type RegisterPayload,
+  RegisterZodSchema,
+} from "@/validation";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -35,7 +39,7 @@ export default function RegisterPage() {
     defaultValues: {
       name: "",
       email: "",
-      phone: "",
+      phoneNumber: "",
       password: "",
       confirmPassword: "",
       role: "VOLUNTEER",
@@ -44,12 +48,12 @@ export default function RegisterPage() {
       onSubmit: RegisterZodSchema,
     },
     onSubmit: async ({ value }: { value: RegisterFormData }) => {
-      const registerData = {
+      const registerData: RegisterPayload = {
         name: value.name,
         email: value.email,
-        phone: value.phone,
+        phoneNumber: value.phoneNumber,
         password: value.password,
-        role: value.role,
+        ...(value.role ? { role: value.role } : {}),
       };
 
       register(registerData, {
@@ -193,11 +197,9 @@ export default function RegisterPage() {
                 name="name"
                 validators={{
                   onBlur: ({ value }) =>
-                    !value
-                      ? "Full name is required"
-                      : value.trim().length < 2
-                        ? "Name must be at least 2 characters"
-                        : undefined,
+                    !value || value.trim().length === 0
+                      ? "Name is required"
+                      : undefined,
                 }}
               >
                 {(field) => (
@@ -243,7 +245,7 @@ export default function RegisterPage() {
                     !value
                       ? "Email is required"
                       : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-                        ? "Please enter a valid email"
+                        ? "Invalid email format"
                         : undefined,
                 }}
               >
@@ -282,16 +284,14 @@ export default function RegisterPage() {
                 )}
               </form.Field>
 
-              {/* Phone Field */}
+              {/* Phone Number Field */}
               <form.Field
-                name="phone"
+                name="phoneNumber"
                 validators={{
                   onBlur: ({ value }) =>
-                    !value
+                    !value || value.trim().length === 0
                       ? "Phone number is required"
-                      : value.length < 10
-                        ? "Phone number must be at least 10 digits"
-                        : undefined,
+                      : undefined,
                 }}
               >
                 {(field) => (
@@ -333,12 +333,20 @@ export default function RegisterPage() {
               <form.Field
                 name="password"
                 validators={{
-                  onBlur: ({ value }) =>
-                    !value
-                      ? "Password is required"
-                      : value.length < 6
-                        ? "Password must be at least 6 characters"
-                        : undefined,
+                  onBlur: ({ value }) => {
+                    if (!value) return "Password is required";
+                    if (value.length < 8)
+                      return "Password Must Minimum 8 Characters Long.";
+                    if (!/[a-z]/.test(value))
+                      return "Password must contain at least 1 Lowercase Letter";
+                    if (!/[A-Z]/.test(value))
+                      return "Password must contain at least 1 Uppercase Letter";
+                    if (!/[0-9]/.test(value))
+                      return "Password must contain at least 1 Number";
+                    if (!/[^A-Za-z0-9]/.test(value))
+                      return "Password must contain at least 1 Special Character";
+                    return undefined;
+                  },
                 }}
               >
                 {(field) => (
@@ -356,7 +364,7 @@ export default function RegisterPage() {
                         id={field.name}
                         name={field.name}
                         type={showPassword ? "text" : "password"}
-                        placeholder="Create a strong password"
+                        placeholder="Min. 8 chars (A-Z, a-z, 0-9, symbol)"
                         autoComplete="new-password"
                         value={field.state.value}
                         onBlur={field.handleBlur}
