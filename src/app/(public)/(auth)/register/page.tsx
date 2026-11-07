@@ -25,6 +25,7 @@ import {
   type RegisterPayload,
   RegisterZodSchema,
 } from "@/validation";
+import { email } from "zod";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -59,17 +60,15 @@ export default function RegisterPage() {
       register(registerData, {
         onSuccess: (res: any) => {
           toast.success(res?.message || "Account created successfully!");
-          if (res?.data?.accessToken) {
-            router.push("/");
-          } else {
-            router.push("/login");
-          }
+          const params = new URLSearchParams({ email: registerData.email });
+
+          router.push(`/register/verify-account?${params.toString()}`);
         },
         onError: (err: any) => {
           toast.error(
             err?.data?.message ||
-              err?.message ||
-              "Registration failed. Please try again."
+            err?.message ||
+            "Registration failed. Please try again."
           );
         },
       });
@@ -481,11 +480,10 @@ export default function RegisterPage() {
                           type="button"
                           onClick={() => field.handleChange(item.value)}
                           aria-pressed={field.state.value === item.value}
-                          className={`flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition ${
-                            field.state.value === item.value
-                              ? "border-green-700 bg-green-50 text-green-800 ring-2 ring-green-700/10"
-                              : "border-slate-200 bg-white text-slate-600 hover:border-green-300"
-                          }`}
+                          className={`flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition ${field.state.value === item.value
+                            ? "border-green-700 bg-green-50 text-green-800 ring-2 ring-green-700/10"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-green-300"
+                            }`}
                         >
                           <Users className="h-4 w-4" />
                           {item.label}

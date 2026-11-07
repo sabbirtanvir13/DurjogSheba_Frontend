@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
+import type { VerifyAccountPayload } from "@/types/auth.type";
 import type { LoginFormData, RegisterPayload } from "@/validation";
 
 export function Userlogin(payload: LoginFormData) {
@@ -10,6 +11,13 @@ export function Userlogin(payload: LoginFormData) {
 
 export function UserRegister(payload: RegisterPayload) {
   return apiClient<any>("/auth/register", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function verifyAccount(payload: VerifyAccountPayload) {
+  return apiClient<any>("/auth/verify-email", {
     method: "POST",
     body: payload,
   });
@@ -32,7 +40,7 @@ export async function getMe() {
   try {
     const res = await apiClient<any>("/auth/me");
     return res?.data ?? null;
-  } catch (error) {
+  } catch (_error) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
     }
