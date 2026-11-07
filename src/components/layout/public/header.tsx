@@ -1,9 +1,23 @@
 "use client";
 
-import { ArrowUpRight, Heart, Menu, ShieldPlus, Siren, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Settings,
+  ShieldPlus,
+  Siren,
+  User,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useGetMe, useLogout } from "@/hooks";
+import { toast } from "react-toastify";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,13 +44,42 @@ export function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+export function getDashboardHref(role?: string): string {
+  switch (role) {
+    case "ADMIN":
+      return "/admin";
+    case "VOLUNTEER":
+      return "/volunteer";
+    case "DONOR":
+      return "/donor";
+    default:
+      return "/dashboard";
+  }
+}
+
 export function Header() {
   const pathname = usePathname();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const { data: user, isLoading: userLoading } = useGetMe();
+  const { mutate: logout, isPending: logoutPending } = useLogout();
+
+  const handleLogout = () => {
+    logout(undefined, {
+      onSuccess: () => {
+        toast.success("Logged out successfully");
+      },
+      onError: (err: any) => {
+        toast.error(err?.data?.message || err?.message || "Logout failed");
+      },
+    });
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,25 +95,44 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Close mobile menu when route changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Close menus when route changes
   useEffect(() => {
     setIsMenuOpen(false);
+    setIsProfileOpen(false);
   }, [pathname]);
 
+  // Click outside listener for profile dropdown
   useEffect(() => {
-    if (!isMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    if (isProfileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isProfileOpen]);
+
+  // Escape key handler
+  useEffect(() => {
+    if (!isMenuOpen && !isProfileOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsMenuOpen(false);
+        setIsProfileOpen(false);
         menuButtonRef.current?.focus();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
-
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isProfileOpen]);
 
   const toggleMenu = useCallback(() => {
     setIsMenuOpen((previous) => !previous);
@@ -205,30 +267,130 @@ export function Header() {
               Donate Now
             </Link>
 
-            <Link
-              href="/login"
-              className={cn(
-                buttonVariants({ variant: "ghost", size: "sm" }),
-                "h-9 rounded-lg px-3 text-[13px] font-semibold",
-                "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                focusRing,
-              )}
-            >
-              Login
-            </Link>
+            {!userLoading && user ? (
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileOpen((prev) => !prev)}
+                  aria-expanded={isProfileOpen}
+                  aria-haspopup="true"
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white py-1.5 pl-2 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50",
+                    isProfileOpen &&
+                      "border-green-600 bg-green-50/50 ring-2 ring-green-600/10",
+                    focusRing,
+                  )}
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-700 text-xs font-bold text-white shadow-sm">
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </span>
+                  <span className="max-w-[120px] truncate text-[13px]">
+                    {user.name || "My Account"}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-slate-400 transition-transform duration-200",
+                      isProfileOpen && "rotate-180 text-green-700",
+                    )}
+                  />
+                </button>
 
-            <Link
-              href="/register"
-              className={cn(
-                buttonVariants({ size: "sm" }),
-                "h-9 rounded-lg bg-green-700 px-4",
-                "text-[13px] font-semibold text-white",
-                "shadow-sm transition-all hover:bg-green-800 hover:shadow",
-                focusRing,
-              )}
-            >
-              Get Started
-            </Link>
+                {/* Dropdown Menu */}
+                {isProfileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-64 origin-top-right rounded-2xl border border-slate-200/90 bg-white p-2 shadow-xl shadow-slate-900/10 transition-all animate-in fade-in-0 zoom-in-95 z-50">
+                    {/* User Info Header */}
+                    <div className="rounded-xl bg-slate-50 p-3">
+                      <p className="truncate text-sm font-bold text-slate-900">
+                        {user.name || "User"}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {user.email}
+                      </p>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className="inline-flex items-center rounded-md bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-800">
+                          {user.role || "MEMBER"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="my-1.5 h-px bg-slate-100" />
+
+                    {/* Menu Items */}
+                    <div className="space-y-0.5">
+                      <Link
+                        href={getDashboardHref(user.role)}
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-green-50 hover:text-green-800"
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-green-700" />
+                        <span>Dashboard</span>
+                      </Link>
+
+                      <Link
+                        href={`${getDashboardHref(user.role)}/profile`}
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-green-50 hover:text-green-800"
+                      >
+                        <User className="h-4 w-4 text-slate-500" />
+                        <span>My Profile</span>
+                      </Link>
+
+                      <Link
+                        href={`${getDashboardHref(user.role)}/settings`}
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-green-50 hover:text-green-800"
+                      >
+                        <Settings className="h-4 w-4 text-slate-500" />
+                        <span>Settings</span>
+                      </Link>
+                    </div>
+
+                    <div className="my-1.5 h-px bg-slate-100" />
+
+                    {/* Logout Option */}
+                    <button
+                      type="button"
+                      disabled={logoutPending}
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        handleLogout();
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                    >
+                      <LogOut className="h-4 w-4 text-red-500" />
+                      <span>{logoutPending ? "Logging out..." : "Log Out"}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className={cn(
+                    buttonVariants({ variant: "ghost", size: "sm" }),
+                    "h-9 rounded-lg px-3 text-[13px] font-semibold",
+                    "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                    focusRing,
+                  )}
+                >
+                  Login
+                </Link>
+
+                <Link
+                  href="/register"
+                  className={cn(
+                    buttonVariants({ size: "sm" }),
+                    "h-9 rounded-lg bg-green-700 px-4",
+                    "text-[13px] font-semibold text-white",
+                    "shadow-sm transition-all hover:bg-green-800 hover:shadow",
+                    focusRing,
+                  )}
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -263,6 +425,9 @@ export function Header() {
         isOpen={isMenuOpen}
         pathname={pathname}
         onNavigate={closeMenu}
+        user={user}
+        userLoading={userLoading}
+        onLogout={handleLogout}
       />
     </header>
   );
@@ -272,9 +437,19 @@ interface MobileMenuProps {
   isOpen: boolean;
   pathname: string;
   onNavigate: () => void;
+  user?: any;
+  userLoading?: boolean;
+  onLogout?: () => void;
 }
 
-export function MobileMenu({ isOpen, pathname, onNavigate }: MobileMenuProps) {
+export function MobileMenu({
+  isOpen,
+  pathname,
+  onNavigate,
+  user,
+  userLoading,
+  onLogout,
+}: MobileMenuProps) {
   if (!isOpen) return null;
 
   return (
@@ -320,29 +495,111 @@ export function MobileMenu({ isOpen, pathname, onNavigate }: MobileMenuProps) {
           Donate Now
         </Link>
 
-        <Link
-          href="/login"
-          onClick={onNavigate}
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "h-10 justify-center rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-            focusRing,
-          )}
-        >
-          Login
-        </Link>
+        {!userLoading && user ? (
+          <div className="flex flex-col gap-2">
+            {/* User Profile Card */}
+            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-700 text-sm font-bold text-white">
+                {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900">
+                  {user.name || "User"}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {user.email}
+                </p>
+                <span className="mt-1 inline-flex items-center rounded-md bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-800">
+                  {user.role || "MEMBER"}
+                </span>
+              </div>
+            </div>
 
-        <Link
-          href="/register"
-          onClick={onNavigate}
-          className={cn(
-            buttonVariants({ size: "sm" }),
-            "h-10 justify-center rounded-lg bg-green-700 text-sm font-semibold text-white shadow-sm hover:bg-green-800",
-            focusRing,
-          )}
-        >
-          Get Started
-        </Link>
+            {/* Links */}
+            <Link
+              href={getDashboardHref(user.role)}
+              onClick={onNavigate}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "h-10 justify-start gap-2.5 rounded-xl px-3 text-sm font-semibold text-slate-700 hover:bg-green-50 hover:text-green-800",
+                focusRing,
+              )}
+            >
+              <LayoutDashboard className="h-4 w-4 text-green-700" />
+              Dashboard
+            </Link>
+
+            <Link
+              href={`${getDashboardHref(user.role)}/profile`}
+              onClick={onNavigate}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "h-10 justify-start gap-2.5 rounded-xl px-3 text-sm font-semibold text-slate-700 hover:bg-green-50 hover:text-green-800",
+                focusRing,
+              )}
+            >
+              <User className="h-4 w-4 text-slate-500" />
+              My Profile
+            </Link>
+
+            <Link
+              href={`${getDashboardHref(user.role)}/settings`}
+              onClick={onNavigate}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "h-10 justify-start gap-2.5 rounded-xl px-3 text-sm font-semibold text-slate-700 hover:bg-green-50 hover:text-green-800",
+                focusRing,
+              )}
+            >
+              <Settings className="h-4 w-4 text-slate-500" />
+              Settings
+            </Link>
+
+            <div className="my-1 h-px bg-slate-100" />
+
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate();
+                if (onLogout) onLogout();
+              }}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "h-10 justify-center gap-2 rounded-xl border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50",
+                focusRing,
+              )}
+            >
+              <LogOut className="h-4 w-4" />
+              Log Out
+            </button>
+          </div>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              onClick={onNavigate}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "h-10 justify-center rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                focusRing,
+              )}
+            >
+              Login
+            </Link>
+
+            <Link
+              href="/register"
+              onClick={onNavigate}
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "h-10 justify-center rounded-lg bg-green-700 text-sm font-semibold text-white shadow-sm hover:bg-green-800",
+                focusRing,
+              )}
+            >
+              Get Started
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
