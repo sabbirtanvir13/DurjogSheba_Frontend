@@ -9,6 +9,7 @@ import {
   Loader2,
   LockKeyhole,
   Mail,
+  Phone,
   ShieldCheck,
   UserRound,
   Users,
@@ -34,6 +35,7 @@ export default function RegisterPage() {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
       password: "",
       confirmPassword: "",
       role: "VOLUNTEER",
@@ -45,6 +47,7 @@ export default function RegisterPage() {
       const registerData = {
         name: value.name,
         email: value.email,
+        phone: value.phone,
         password: value.password,
         role: value.role,
       };
@@ -261,6 +264,53 @@ export default function RegisterPage() {
                         type="email"
                         placeholder="you@example.com"
                         autoComplete="email"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={!field.state.meta.isValid}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
+                      />
+                    </div>
+
+                    {field.state.meta.isTouched &&
+                      !field.state.meta.isValid && (
+                        <p className="mt-1.5 text-xs text-red-600">
+                          {field.state.meta.errors.join(", ")}
+                        </p>
+                      )}
+                  </div>
+                )}
+              </form.Field>
+
+              {/* Phone Field */}
+              <form.Field
+                name="phone"
+                validators={{
+                  onBlur: ({ value }) =>
+                    !value
+                      ? "Phone number is required"
+                      : value.length < 10
+                        ? "Phone number must be at least 10 digits"
+                        : undefined,
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <label
+                      htmlFor={field.name}
+                      className="mb-2 block text-sm font-semibold text-slate-700"
+                    >
+                      Phone Number
+                    </label>
+
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        type="tel"
+                        placeholder="+880 1XXXXXXXXX"
+                        autoComplete="tel"
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}

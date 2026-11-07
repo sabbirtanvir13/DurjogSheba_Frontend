@@ -19,6 +19,9 @@ export const RegisterZodSchema = z
     email: z
       .string({ message: "Email is required" })
       .email("Invalid email format"),
+    phone: z
+      .string({ message: "Phone number is required" })
+      .min(10, "Phone number must be at least 10 digits"),
     password: z
       .string({ message: "Password is required" })
       .min(6, "Password must be at least 6 characters"),
@@ -32,11 +35,13 @@ export const RegisterZodSchema = z
     path: ["confirmPassword"],
   });
 
+
 export type RegisterFormData = z.infer<typeof RegisterZodSchema>;
 
 export type RegisterPayload = {
   name: string;
   email: string;
+  phone?: string;
   password: string;
   role?: string;
 };
