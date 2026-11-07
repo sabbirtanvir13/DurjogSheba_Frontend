@@ -1,4 +1,4 @@
-import { getMe, googleAuth, Userlogin, UserLogout } from "@/api";
+import { getMe, googleAuth, Userlogin, UserLogout, UserRegister } from "@/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useLogin() {
@@ -6,6 +6,21 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: Userlogin,
+    onSuccess: (res: any) => {
+      const token = res?.data?.accessToken;
+      if (token && typeof window !== "undefined") {
+        localStorage.setItem("accessToken", token);
+      }
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+}
+
+export function useRegister() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: UserRegister,
     onSuccess: (res: any) => {
       const token = res?.data?.accessToken;
       if (token && typeof window !== "undefined") {
@@ -39,7 +54,6 @@ export function useGetMe() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
-
 
 export function useGoogleLogin() {
   const queryClient = useQueryClient();

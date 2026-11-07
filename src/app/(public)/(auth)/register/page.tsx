@@ -1,10 +1,12 @@
 "use client";
 
+import { useForm } from "@tanstack/react-form";
 import {
   ArrowRight,
   Eye,
   EyeOff,
   HeartHandshake,
+  Loader2,
   LockKeyhole,
   Mail,
   ShieldCheck,
@@ -12,17 +14,84 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "react-toastify";
+import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin, useRegister } from "@/hooks";
+import { type RegisterFormData, RegisterZodSchema } from "@/validation";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [role, setRole] = useState("VOLUNTEER");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // Connect your existing registration function here.
+  const { mutate: register, isPending: registerPending } = useRegister();
+  const { mutate: googleLoginMutation } = useGoogleLogin();
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "VOLUNTEER",
+    },
+    validators: {
+      onSubmit: RegisterZodSchema,
+    },
+    onSubmit: async ({ value }: { value: RegisterFormData }) => {
+      const registerData = {
+        name: value.name,
+        email: value.email,
+        password: value.password,
+        role: value.role,
+      };
+
+      register(registerData, {
+        onSuccess: (res: any) => {
+          toast.success(res?.message || "Account created successfully!");
+          if (res?.data?.accessToken) {
+            router.push("/");
+          } else {
+            router.push("/login");
+          }
+        },
+        onError: (err: any) => {
+          toast.error(
+            err?.data?.message ||
+              err?.message ||
+              "Registration failed. Please try again."
+          );
+        },
+      });
+    },
+  });
+
+  const googleSuccess = (credentialsResponse: { credential?: string }) => {
+    const idToken = credentialsResponse.credential;
+    if (!idToken) {
+      toast.error("Google sign up failed. Please try again.");
+      return;
+    }
+
+    googleLoginMutation(
+      { idToken },
+      {
+        onSuccess: () => {
+          toast.success("Google sign up successful!");
+          router.push("/");
+        },
+        onError: () => {
+          toast.error("Google sign up failed. Please try again.");
+        },
+      }
+    );
+  };
+
+  const googleError = () => {
+    toast.error("Google sign up failed. Please try again.");
   };
 
   return (
@@ -33,7 +102,7 @@ export default function RegisterPage() {
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: "url('/images/volunteers/volunteer-team.jpg')",
+              backgroundImage: "url('/images/hero/hero-background.jpg')",
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-slate-950/10" />
@@ -108,151 +177,268 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                  Full Name
-                </label>
-
-                <div className="relative">
-                  <UserRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    required
-                    autoComplete="name"
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                  Email Address
-                </label>
-
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    required
-                    autoComplete="email"
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                  Password
-                </label>
-
-                <div className="relative">
-                  <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
-                    required
-                    autoComplete="new-password"
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                  Confirm Password
-                </label>
-
-                <div className="relative">
-                  <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    required
-                    autoComplete="new-password"
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={
-                      showConfirmPassword ? "Hide password" : "Show password"
-                    }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="mb-2 block text-sm font-semibold text-slate-700">
-                  Join as
-                </span>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: "VOLUNTEER", label: "Volunteer" },
-                    { value: "DONOR", label: "Donor" },
-                  ].map((item) => (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => setRole(item.value)}
-                      aria-pressed={role === item.value}
-                      className={`flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition ${
-                        role === item.value
-                          ? "border-green-700 bg-green-50 text-green-800 ring-2 ring-green-700/10"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-green-300"
-                      }`}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+              }}
+              className="space-y-4"
+            >
+              {/* Name Field */}
+              <form.Field
+                name="name"
+                validators={{
+                  onBlur: ({ value }) =>
+                    !value
+                      ? "Full name is required"
+                      : value.trim().length < 2
+                        ? "Name must be at least 2 characters"
+                        : undefined,
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <label
+                      htmlFor={field.name}
+                      className="mb-2 block text-sm font-semibold text-slate-700"
                     >
-                      <Users className="h-4 w-4" />
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      Full Name
+                    </label>
 
+                    <div className="relative">
+                      <UserRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        type="text"
+                        placeholder="Enter your full name"
+                        autoComplete="name"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={!field.state.meta.isValid}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
+                      />
+                    </div>
+
+                    {field.state.meta.isTouched &&
+                      !field.state.meta.isValid && (
+                        <p className="mt-1.5 text-xs text-red-600">
+                          {field.state.meta.errors.join(", ")}
+                        </p>
+                      )}
+                  </div>
+                )}
+              </form.Field>
+
+              {/* Email Field */}
+              <form.Field
+                name="email"
+                validators={{
+                  onBlur: ({ value }) =>
+                    !value
+                      ? "Email is required"
+                      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+                        ? "Please enter a valid email"
+                        : undefined,
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <label
+                      htmlFor={field.name}
+                      className="mb-2 block text-sm font-semibold text-slate-700"
+                    >
+                      Email Address
+                    </label>
+
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        type="email"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={!field.state.meta.isValid}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
+                      />
+                    </div>
+
+                    {field.state.meta.isTouched &&
+                      !field.state.meta.isValid && (
+                        <p className="mt-1.5 text-xs text-red-600">
+                          {field.state.meta.errors.join(", ")}
+                        </p>
+                      )}
+                  </div>
+                )}
+              </form.Field>
+
+              {/* Password Field */}
+              <form.Field
+                name="password"
+                validators={{
+                  onBlur: ({ value }) =>
+                    !value
+                      ? "Password is required"
+                      : value.length < 6
+                        ? "Password must be at least 6 characters"
+                        : undefined,
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <label
+                      htmlFor={field.name}
+                      className="mb-2 block text-sm font-semibold text-slate-700"
+                    >
+                      Password
+                    </label>
+
+                    <div className="relative">
+                      <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create a strong password"
+                        autoComplete="new-password"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={!field.state.meta.isValid}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {field.state.meta.isTouched &&
+                      !field.state.meta.isValid && (
+                        <p className="mt-1.5 text-xs text-red-600">
+                          {field.state.meta.errors.join(", ")}
+                        </p>
+                      )}
+                  </div>
+                )}
+              </form.Field>
+
+              {/* Confirm Password Field */}
+              <form.Field
+                name="confirmPassword"
+                validators={{
+                  onBlur: ({ value }) =>
+                    !value
+                      ? "Please confirm your password"
+                      : value !== form.getFieldValue("password")
+                        ? "Passwords do not match"
+                        : undefined,
+                }}
+              >
+                {(field) => (
+                  <div>
+                    <label
+                      htmlFor={field.name}
+                      className="mb-2 block text-sm font-semibold text-slate-700"
+                    >
+                      Confirm Password
+                    </label>
+
+                    <div className="relative">
+                      <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm your password"
+                        autoComplete="new-password"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={!field.state.meta.isValid}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword((prev) => !prev)
+                        }
+                        aria-label={
+                          showConfirmPassword
+                            ? "Hide password"
+                            : "Show password"
+                        }
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {field.state.meta.isTouched &&
+                      !field.state.meta.isValid && (
+                        <p className="mt-1.5 text-xs text-red-600">
+                          {field.state.meta.errors.join(", ")}
+                        </p>
+                      )}
+                  </div>
+                )}
+              </form.Field>
+
+              {/* Role Selection */}
+              <form.Field name="role">
+                {(field) => (
+                  <div>
+                    <span className="mb-2 block text-sm font-semibold text-slate-700">
+                      Join as
+                    </span>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: "VOLUNTEER", label: "Volunteer" },
+                        { value: "DONOR", label: "Donor" },
+                      ].map((item) => (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => field.handleChange(item.value)}
+                          aria-pressed={field.state.value === item.value}
+                          className={`flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition ${
+                            field.state.value === item.value
+                              ? "border-green-700 bg-green-50 text-green-800 ring-2 ring-green-700/10"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-green-300"
+                          }`}
+                        >
+                          <Users className="h-4 w-4" />
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </form.Field>
+
+              {/* Terms and conditions */}
               <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-5 text-slate-600">
                 <input
                   type="checkbox"
@@ -280,15 +466,46 @@ export default function RegisterPage() {
                 </span>
               </label>
 
+              {/* Submit Button */}
               <button
                 type="submit"
-                disabled={!acceptedTerms}
+                disabled={
+                  !acceptedTerms ||
+                  form.state.isSubmitting ||
+                  registerPending
+                }
                 className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-green-700 text-sm font-semibold text-white shadow-lg shadow-green-700/15 transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-4 focus:ring-green-700/20"
               >
-                Create Account
-                <ArrowRight className="h-4 w-4" />
+                {form.state.isSubmitting || registerPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
             </form>
+
+            <div className="my-6 flex items-center gap-4">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Or continue with
+              </span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <div className="flex justify-center">
+              <GoogleLogin
+                text="signup_with"
+                shape="pill"
+                onSuccess={googleSuccess}
+                onError={googleError}
+              />
+            </div>
 
             <p className="mt-6 text-center text-sm text-slate-600">
               Already have an account?{" "}

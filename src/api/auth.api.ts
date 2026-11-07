@@ -1,8 +1,15 @@
 import { apiClient } from "@/lib/apiClient";
-import type { LoginFormData } from "@/validation";
+import type { LoginFormData, RegisterPayload } from "@/validation";
 
 export function Userlogin(payload: LoginFormData) {
   return apiClient<any>("/auth/login", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function UserRegister(payload: RegisterPayload) {
+  return apiClient<any>("/auth/register", {
     method: "POST",
     body: payload,
   });
@@ -33,8 +40,6 @@ export async function getMe() {
   }
 }
 
-
-
 export function googleAuth(payload: { idToken: string }) {
-  return apiClient("/auth/google", { method: "POST", body: payload })
+  return apiClient("/auth/google", { method: "POST", body: payload });
 }
