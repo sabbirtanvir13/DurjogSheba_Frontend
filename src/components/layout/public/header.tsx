@@ -8,11 +8,11 @@ import {
   LogOut,
   Menu,
   Settings,
-  ShieldPlus,
   Siren,
   User,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -199,9 +199,14 @@ export function Header() {
             focusRing,
           )}
         >
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-700 text-white shadow-sm transition-colors group-hover:bg-green-800">
-            <ShieldPlus className="h-6 w-6" aria-hidden="true" />
-          </span>
+          <Image
+            src="/Logo.png"
+            alt="DurjogSheba Logo"
+            width={44}
+            height={44}
+            className="h-11 w-11 object-contain transition-transform group-hover:scale-105"
+            priority
+          />
 
           <span className="flex flex-col gap-0.5">
             <span className="text-[17px] font-bold leading-tight tracking-tight text-slate-900">
