@@ -494,7 +494,7 @@ export default function RecentReliefActivities() {
             <span>Latest Updates</span>
           </span>
 
-          <div className="ticker-track flex min-w-0 gap-10 whitespace-nowrap text-xs text-slate-600">
+          <div className="animate-ticker flex min-w-0 gap-10 whitespace-nowrap text-xs text-slate-600">
             {[...activities, ...activities].map((item, index) => (
               <button
                 key={`${item.id}-${index}`}
@@ -623,32 +623,7 @@ export default function RecentReliefActivities() {
         </div>
       )}
 
-      {/* Marquee Animation Styles */}
-      <style jsx>{`
-        .ticker-track {
-          width: max-content;
-          animation: tickerMove 38s linear infinite;
-        }
 
-        .ticker-track:hover {
-          animation-play-state: paused;
-        }
-
-        @keyframes tickerMove {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(-50%);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .ticker-track {
-            animation: none;
-          }
-        }
-      `}</style>
     </section>
   );
 }
