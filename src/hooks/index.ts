@@ -1,1 +1,2 @@
-export * from "./auth.hook"
+export * from "./auth.hook";
+export * from "./shelters.hook";
