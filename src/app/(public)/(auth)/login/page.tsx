@@ -553,6 +553,10 @@ function LoginContent() {
                 Click any role to auto-authenticate and access its live
                 dashboard
               </p>
+
+              <p className="mt-2.5 text-center text-[10px] text-slate-400">
+                Click any role to auto-authenticate and access its live dashboard
+              </p>
             </div>
 
             <p className="mt-5 text-center text-xs text-slate-600">

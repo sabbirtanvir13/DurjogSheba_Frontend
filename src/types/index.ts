@@ -1,3 +1,4 @@
+export * from "./admin.types";
 export * from "./auth.type";
 export * from "./donation.types";
 export * from "./reliefNeed.types";

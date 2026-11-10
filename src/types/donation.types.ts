@@ -37,4 +37,3 @@ export interface IDonationApiResponse<T> {
   message?: string;
   data: T;
 }
-
