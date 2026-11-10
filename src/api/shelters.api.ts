@@ -1,5 +1,9 @@
 import { apiClient } from "@/lib/apiClient";
-import type { IShelterApiResponse, IShelterFilterRequest } from "@/types";
+import type {
+  IShelterApiResponse,
+  IShelterCreateInput,
+  IShelterFilterRequest,
+} from "@/types";
 
 export function getAllShelters(params?: IShelterFilterRequest) {
   return apiClient<IShelterApiResponse>("/shelters", {
@@ -11,5 +15,18 @@ export function getAllShelters(params?: IShelterFilterRequest) {
 export function getShelterById(id: string) {
   return apiClient<IShelterApiResponse>(`/shelters/${id}`, {
     method: "GET",
+  });
+}
+
+export function createShelter(payload: FormData | IShelterCreateInput) {
+  return apiClient<IShelterApiResponse>("/shelters/create-shelter", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function deleteShelter(id: string) {
+  return apiClient<IShelterApiResponse>(`/shelters/${id}`, {
+    method: "DELETE",
   });
 }
