@@ -1,3 +1,6 @@
+export * from "./relief/ReliefNeedModal";
+export * from "./relief/ReliefNeedTable";
+export * from "./relief/UpdateFulfillmentModal";
 export * from "./rescue/AssignVolunteerModal";
 export * from "./rescue/CreateRescueModal";
 export * from "./rescue/RescueTable";
