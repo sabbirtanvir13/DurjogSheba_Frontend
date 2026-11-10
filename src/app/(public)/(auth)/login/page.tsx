@@ -1,31 +1,59 @@
 "use client";
 
+import { GoogleLogin } from "@react-oauth/google";
 import { useForm } from "@tanstack/react-form";
 import {
   ArrowRight,
   Eye,
   EyeOff,
+  Heart,
   HeartHandshake,
+  LifeBuoy,
   Loader2,
   LockKeyhole,
   Mail,
+  ShieldAlert,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { type LoginFormData, LoginZodSchema } from "@/validation";
-import { useGoogleLogin, useLogin } from "@/hooks";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { toast } from "react-toastify";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin, useLogin } from "@/hooks";
+import { type LoginFormData, LoginZodSchema } from "@/validation";
 
-export default function LoginPage() {
+function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const router = useRouter();
+  const [activeDemoRole, setActiveDemoRole] = useState<string | null>(null);
 
-  const { mutate: login, isPending: loginpending } = useLogin();
-  const { mutate: googleLoginMutation, isPending: isGooglePending } = useGoogleLogin();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+
+  const { mutate: login, isPending: loginPending } = useLogin();
+  const { mutate: googleLoginMutation } = useGoogleLogin();
+
+  const handleRedirectByRole = (role?: string) => {
+    if (redirectParam) {
+      router.push(redirectParam);
+      return;
+    }
+    switch (role) {
+      case "ADMIN":
+        router.push("/admin");
+        break;
+      case "VOLUNTEER":
+        router.push("/volunteer");
+        break;
+      case "DONOR":
+        router.push("/donor");
+        break;
+      default:
+        router.push("/");
+    }
+  };
 
   const form = useForm({
     defaultValues: {
@@ -36,44 +64,110 @@ export default function LoginPage() {
       onSubmit: LoginZodSchema,
     },
     onSubmit: async ({ value }: { value: LoginFormData }) => {
-      const loginData: LoginFormData = {
-        email: value.email,
-        password: value.password,
-      };
-
-      login(loginData, {
-        onSuccess: (res: any) => {
-          toast.success(res?.message || "Logged in successfully!");
-          router.push("/");
+      login(
+        { email: value.email, password: value.password },
+        {
+          onSuccess: (res: unknown) => {
+            const apiRes = res as {
+              message?: string;
+              data?: { user?: { role?: string }; role?: string };
+              user?: { role?: string };
+            };
+            toast.success(apiRes?.message || "Logged in successfully!");
+            const role =
+              apiRes?.data?.user?.role ||
+              apiRes?.user?.role ||
+              apiRes?.data?.role;
+            handleRedirectByRole(role);
+          },
+          onError: (err: unknown) => {
+            const apiErr = err as {
+              data?: { message?: string };
+              message?: string;
+            };
+            toast.error(
+              apiErr?.data?.message ||
+                apiErr?.message ||
+                "Login failed. Please try again.",
+            );
+          },
         },
-        onError: (err: any) => {
-          toast.error(
-            err?.data?.message || err?.message || "Login failed. Please try again."
-          );
-        },
-      });
+      );
     },
   });
 
+  const handleDemoLogin = (role: "DONOR" | "VOLUNTEER" | "ADMIN") => {
+    let email = "";
+    let password = "";
+
+    if (role === "DONOR") {
+      email = "donor@durjogsheba.com";
+      password = "Donor@123456";
+    } else if (role === "VOLUNTEER") {
+      email = "volunteer@durjogsheba.com";
+      password = "Volunteer@123456";
+    } else {
+      email = "admin@durjogsheba.com";
+      password = "Admin@123456";
+    }
+
+    form.setFieldValue("email", email);
+    form.setFieldValue("password", password);
+    setActiveDemoRole(role);
+
+    login(
+      { email, password },
+      {
+        onSuccess: (res: unknown) => {
+          const apiRes = res as {
+            message?: string;
+            data?: { user?: { role?: string }; role?: string };
+            user?: { role?: string };
+          };
+          toast.success(`Logged in as Demo ${role}!`);
+          setActiveDemoRole(null);
+          const userRole =
+            apiRes?.data?.user?.role ||
+            apiRes?.user?.role ||
+            apiRes?.data?.role ||
+            role;
+          handleRedirectByRole(userRole);
+        },
+        onError: (err: unknown) => {
+          setActiveDemoRole(null);
+          const apiErr = err as {
+            data?: { message?: string };
+            message?: string;
+          };
+          toast.error(
+            apiErr?.data?.message ||
+              apiErr?.message ||
+              `Demo login for ${role} failed`,
+          );
+        },
+      },
+    );
+  };
 
   const googleSuccess = (credentialsResponse: { credential?: string }) => {
-    const idToken = credentialsResponse.credential
+    const idToken = credentialsResponse.credential;
     if (!idToken) {
       toast.error("Google login failed. Please try again.");
       return;
     }
 
-    googleLoginMutation({ idToken }, {
-      onSuccess: () => {
-        toast.success("Google login successful!");
-        router.push("/");
+    googleLoginMutation(
+      { idToken },
+      {
+        onSuccess: () => {
+          toast.success("Google login successful!");
+          router.push("/");
+        },
+        onError: () => {
+          toast.error("Google login failed. Please try again.");
+        },
       },
-      onError: () => {
-        toast.error("Google login failed. Please try again.")
-      }
-    })
-
-
+    );
   };
 
   const googleError = () => {
@@ -142,27 +236,28 @@ export default function LoginPage() {
         </section>
 
         {/* Form Side */}
-        <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-12 xl:px-16">
-          <div className="w-full max-w-md">
+        <section className="flex items-center justify-center px-5 py-8 sm:px-10 lg:px-12 xl:px-16 overflow-y-auto">
+          <div className="w-full max-w-md my-auto">
             <Link
               href="/"
-              className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-green-700 lg:hidden"
+              className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-green-700 lg:hidden"
             >
               <HeartHandshake className="h-5 w-5" />
               DurjogSheba
             </Link>
 
-            <div className="mb-8">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-50 text-green-700">
-                <ShieldCheck className="h-7 w-7" />
+            <div className="mb-6">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-700">
+                <ShieldCheck className="h-6 w-6" />
               </div>
 
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
                 Welcome back
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Sign in to your DurjogSheba account and continue making a difference.
+              <p className="mt-1.5 text-xs sm:text-sm leading-6 text-slate-500">
+                Sign in to your DurjogSheba account and continue making a
+                difference.
               </p>
             </div>
 
@@ -172,7 +267,7 @@ export default function LoginPage() {
                 e.stopPropagation();
                 form.handleSubmit();
               }}
-              className="space-y-5"
+              className="space-y-4"
             >
               {/* Email Field */}
               <form.Field
@@ -181,8 +276,8 @@ export default function LoginPage() {
                   onBlur: ({ value }) =>
                     !value
                       ? "Email is required"
-                      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-                        ? "Please enter a valid email"
+                      : !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)
+                        ? "Invalid email address"
                         : undefined,
                 }}
               >
@@ -190,13 +285,13 @@ export default function LoginPage() {
                   <div>
                     <label
                       htmlFor={field.name}
-                      className="mb-2 block text-sm font-semibold text-slate-700"
+                      className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600"
                     >
                       Email Address
                     </label>
 
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
                       <input
                         id={field.name}
@@ -208,13 +303,13 @@ export default function LoginPage() {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={!field.state.meta.isValid}
-                        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-xs sm:text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
                       />
                     </div>
 
                     {field.state.meta.isTouched &&
                       !field.state.meta.isValid && (
-                        <p className="mt-1.5 text-xs text-red-600">
+                        <p className="mt-1 text-xs text-red-600">
                           {field.state.meta.errors.join(", ")}
                         </p>
                       )}
@@ -232,10 +327,10 @@ export default function LoginPage() {
               >
                 {(field) => (
                   <div>
-                    <div className="mb-2 flex items-center justify-between">
+                    <div className="mb-1.5 flex items-center justify-between">
                       <label
                         htmlFor={field.name}
-                        className="text-sm font-semibold text-slate-700"
+                        className="text-xs font-bold uppercase tracking-wider text-slate-600"
                       >
                         Password
                       </label>
@@ -249,7 +344,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="relative">
-                      <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <LockKeyhole className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
                       <input
                         id={field.name}
@@ -261,7 +356,7 @@ export default function LoginPage() {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={!field.state.meta.isValid}
-                        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-xs sm:text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-green-600 focus:ring-4 focus:ring-green-600/10 aria-[invalid=true]:border-red-500"
                       />
 
                       <button
@@ -270,19 +365,19 @@ export default function LoginPage() {
                         aria-label={
                           showPassword ? "Hide password" : "Show password"
                         }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-4 w-4" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-4 w-4" />
                         )}
                       </button>
                     </div>
 
                     {field.state.meta.isTouched &&
                       !field.state.meta.isValid && (
-                        <p className="mt-1.5 text-xs text-red-600">
+                        <p className="mt-1 text-xs text-red-600">
                           {field.state.meta.errors.join(", ")}
                         </p>
                       )}
@@ -291,7 +386,7 @@ export default function LoginPage() {
               </form.Field>
 
               {/* Remember Me */}
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-600">
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-600">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -304,10 +399,10 @@ export default function LoginPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={form.state.isSubmitting || loginpending}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-green-700 text-sm font-semibold text-white shadow-lg shadow-green-700/15 transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-4 focus:ring-green-700/20"
+                disabled={form.state.isSubmitting || loginPending}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-green-700 text-xs sm:text-sm font-bold text-white shadow-md shadow-green-700/15 transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-4 focus:ring-green-700/20"
               >
-                {form.state.isSubmitting || loginpending ? (
+                {form.state.isSubmitting || loginPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Signing in...</span>
@@ -321,9 +416,10 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="my-6 flex items-center gap-4">
+            {/* Google Divider */}
+            <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Or continue with
               </span>
               <div className="h-px flex-1 bg-slate-200" />
@@ -335,31 +431,129 @@ export default function LoginPage() {
                 shape="pill"
                 onSuccess={googleSuccess}
                 onError={googleError}
-
-              >
-
-              </GoogleLogin>
-
-
+              />
             </div>
 
-            <p className="mt-7 text-center text-sm text-slate-600">
+            {/* ========================================= */}
+            {/* 3 DEMO ACCOUNTS: Donor, Volunteer, Admin */}
+            {/* ========================================= */}
+            <div className="mt-6 border-t border-slate-200/90 pt-5">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                  <Sparkles className="h-4 w-4 text-emerald-700" />
+                  <span>Demo Login (Click to Test)</span>
+                </div>
+                <span className="text-[10px] font-medium text-slate-400">
+                  One-click auto-fill
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {/* 1. DONOR DEMO */}
+                <button
+                  type="button"
+                  disabled={loginPending}
+                  onClick={() => handleDemoLogin("DONOR")}
+                  className="group relative flex flex-col items-start rounded-xl border border-pink-200/80 bg-pink-50/40 p-2.5 text-left transition hover:border-pink-300 hover:bg-pink-50/90 hover:shadow-2xs disabled:opacity-50"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-pink-700">
+                      <Heart className="h-3 w-3 fill-pink-600 text-pink-600" />
+                      Donor
+                    </span>
+                    {activeDemoRole === "DONOR" && (
+                      <Loader2 className="h-3 w-3 animate-spin text-pink-600" />
+                    )}
+                  </div>
+                  <p className="mt-1 text-[10px] font-mono text-slate-600 truncate w-full">
+                    donor@...
+                  </p>
+                  <span className="mt-1.5 text-[10px] font-bold text-pink-700 group-hover:underline">
+                    Login →
+                  </span>
+                </button>
+
+                {/* 2. VOLUNTEER DEMO */}
+                <button
+                  type="button"
+                  disabled={loginPending}
+                  onClick={() => handleDemoLogin("VOLUNTEER")}
+                  className="group relative flex flex-col items-start rounded-xl border border-blue-200/80 bg-blue-50/40 p-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50/90 hover:shadow-2xs disabled:opacity-50"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700">
+                      <LifeBuoy className="h-3 w-3 text-blue-600" />
+                      Volunteer
+                    </span>
+                    {activeDemoRole === "VOLUNTEER" && (
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                    )}
+                  </div>
+                  <p className="mt-1 text-[10px] font-mono text-slate-600 truncate w-full">
+                    volunteer@...
+                  </p>
+                  <span className="mt-1.5 text-[10px] font-bold text-blue-700 group-hover:underline">
+                    Login →
+                  </span>
+                </button>
+
+                {/* 3. ADMIN DEMO */}
+                <button
+                  type="button"
+                  disabled={loginPending}
+                  onClick={() => handleDemoLogin("ADMIN")}
+                  className="group relative flex flex-col items-start rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-2.5 text-left transition hover:border-emerald-300 hover:bg-emerald-50/90 hover:shadow-2xs disabled:opacity-50"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+                      <ShieldAlert className="h-3 w-3 text-emerald-700" />
+                      Admin
+                    </span>
+                    {activeDemoRole === "ADMIN" && (
+                      <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />
+                    )}
+                  </div>
+                  <p className="mt-1 text-[10px] font-mono text-slate-600 truncate w-full">
+                    admin@...
+                  </p>
+                  <span className="mt-1.5 text-[10px] font-bold text-emerald-800 group-hover:underline">
+                    Login →
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <p className="mt-5 text-center text-xs text-slate-600">
               Don&apos;t have an account?{" "}
               <Link
                 href="/register"
-                className="font-semibold text-green-700 hover:text-green-800"
+                className="font-bold text-green-700 hover:text-green-800"
               >
                 Create account
               </Link>
             </p>
 
-            <div className="mt-8 flex items-center justify-center gap-2 border-t border-slate-100 pt-5 text-xs text-slate-500">
-              <ShieldCheck className="h-4 w-4 text-green-700" />
-              Your information is protected and secure.
+            <div className="mt-6 flex items-center justify-center gap-2 border-t border-slate-100 pt-4 text-[11px] text-slate-400">
+              <ShieldCheck className="h-3.5 w-3.5 text-green-700" />
+              Secure 256-bit encrypted authentication
             </div>
           </div>
         </section>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-green-700 border-t-transparent" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
