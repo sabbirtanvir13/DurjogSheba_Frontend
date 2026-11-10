@@ -27,3 +27,4 @@ export function getAllDonationsAdmin() {
     method: "GET",
   });
 }
+
