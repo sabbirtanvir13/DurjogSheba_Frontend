@@ -1,7 +1,5 @@
 "use client";
 
-import { useGetShelters } from "@/hooks";
-import type { IShelter, IReliefNeedItem } from "@/types";
 import {
   AlertTriangle,
   ArrowRight,
@@ -17,6 +15,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useGetShelters } from "@/hooks";
+import type { IReliefNeedItem, IShelter } from "@/types";
 
 const bangladeshDistricts: Record<string, string[]> = {
   Khulna: [
@@ -114,83 +114,6 @@ const bangladeshDistricts: Record<string, string[]> = {
   ],
 };
 
-const defaultShelters: IShelter[] = [
-  {
-    _id: "khulna-community-shelter",
-    id: "khulna-community-shelter",
-    name: "Khulna Community Shelter live",
-    district: "Khulna",
-    upazila: "Khulna",
-    address: "Section 10, Block A",
-    capacity: 10000,
-    currentPeople: 2500,
-    contactPerson: "Super Admin",
-    contactPhone: "01711223344",
-    coordinator: {
-      name: "Super Admin",
-    },
-    images: [
-      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80",
-    ],
-  },
-  {
-    _id: "cumilla-community-shelter",
-    id: "cumilla-community-shelter",
-    name: "Cumilla Community Shelter",
-    district: "Cumilla",
-    upazila: "Cumilla",
-    address: "Section 10, Block A",
-    capacity: 1000,
-    currentPeople: 250,
-    contactPerson: "Super Admin",
-    contactPhone: "01711223344",
-    coordinator: {
-      name: "Super Admin",
-    },
-    images: [
-      "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
-    ],
-  },
-  {
-    _id: "mirpur-community-shelter",
-    id: "mirpur-community-shelter",
-    name: "Mirpur Community Shelter",
-    district: "Dhaka",
-    upazila: "Mirpur",
-    address: "Section 10, Block A",
-    capacity: 500,
-    currentPeople: 50,
-    contactPerson: "Super Admin",
-    contactPhone: "01711223344",
-    coordinator: {
-      name: "Super Admin",
-    },
-    images: [
-      "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=800&q=80",
-    ],
-    reliefNeeds: [
-      {
-        id: "1",
-        name: "ORS",
-        quantity: "(1000 PACKET)",
-        urgency: "CRITICAL",
-      },
-      {
-        id: "2",
-        name: "Masoor Dal",
-        quantity: "(150 KG)",
-        urgency: "HIGH",
-      },
-      {
-        id: "3",
-        name: "Miniket Rice",
-        quantity: "(500 KG)",
-        urgency: "IN PROGRESS",
-      },
-    ],
-  },
-];
-
 export default function SheltersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
@@ -231,23 +154,32 @@ export default function SheltersPage() {
     });
   };
 
+  // Purely API-driven shelters list (No mock data fallback)
   const sheltersList: IShelter[] = useMemo(() => {
-    const rawList =
-      (apiData as any)?.data && Array.isArray((apiData as any).data)
-        ? ((apiData as any).data as IShelter[])
+    if (!apiData) return [];
+
+    const rawList: IShelter[] =
+      "data" in apiData && Array.isArray(apiData.data)
+        ? (apiData.data as IShelter[])
         : Array.isArray(apiData)
           ? (apiData as IShelter[])
-          : defaultShelters;
+          : [];
 
-    if (!activeFilters.searchTerm && !activeFilters.district && !activeFilters.upazila) {
+    if (
+      !activeFilters.searchTerm &&
+      !activeFilters.district &&
+      !activeFilters.upazila
+    ) {
       return rawList;
     }
 
     return rawList.filter((item) => {
+      const search = (activeFilters.searchTerm || "").toLowerCase().trim();
       const matchesSearch =
-        !activeFilters.searchTerm ||
-        item.name.toLowerCase().includes(activeFilters.searchTerm.toLowerCase()) ||
-        item.address?.toLowerCase().includes(activeFilters.searchTerm.toLowerCase());
+        !search ||
+        item.name?.toLowerCase().includes(search) ||
+        item.address?.toLowerCase().includes(search) ||
+        item.district?.toLowerCase().includes(search);
 
       const matchesDistrict =
         !activeFilters.district ||
@@ -326,7 +258,7 @@ export default function SheltersPage() {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search shelter name..."
+                  placeholder="Search shelter name or address..."
                   className="w-full bg-transparent text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
                 />
               </div>
@@ -363,7 +295,11 @@ export default function SheltersPage() {
                   onChange={(e) => setSelectedUpazila(e.target.value)}
                   className="bg-transparent text-xs sm:text-sm font-medium text-slate-700 cursor-pointer focus:outline-none pr-5 appearance-none w-full"
                 >
-                  <option value="">All Upazilas</option>
+                  <option value="">
+                    {selectedDistrict
+                      ? "All Upazilas"
+                      : "All Upazilas / Thanas"}
+                  </option>
                   {availableUpazilas.map((upazila) => (
                     <option key={upazila} value={upazila}>
                       {upazila}
@@ -409,26 +345,34 @@ export default function SheltersPage() {
               No shelters found
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Try adjusting your search criteria or district filter.
+              {activeFilters.searchTerm ||
+              activeFilters.district ||
+              activeFilters.upazila
+                ? "Try adjusting your search criteria or district filter."
+                : "No registered emergency shelters available at the moment."}
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchInput("");
-                setSelectedDistrict("");
-                setSelectedUpazila("");
-                setActiveFilters({});
-              }}
-              className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
-            >
-              Reset Filters
-            </button>
+            {(activeFilters.searchTerm ||
+              activeFilters.district ||
+              activeFilters.upazila) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setSelectedDistrict("");
+                  setSelectedUpazila("");
+                  setActiveFilters({});
+                }}
+                className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+              >
+                Reset Filters
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 items-start">
-            {sheltersList.map((shelter, idx) => (
+            {sheltersList.map((shelter) => (
               <ShelterCard
-                key={shelter._id || shelter.id || `shelter-${idx}`}
+                key={String(shelter.id || shelter._id || shelter.name)}
                 shelter={shelter}
               />
             ))}
@@ -440,7 +384,13 @@ export default function SheltersPage() {
           <div className="flex items-center gap-3.5 sm:gap-4">
             {/* Custom Support Icon matching image */}
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50/80 shadow-xs">
-              <svg viewBox="0 0 48 48" className="h-8 w-8" fill="none">
+              <svg
+                viewBox="0 0 48 48"
+                className="h-8 w-8"
+                fill="none"
+                role="img"
+                aria-label="Disaster Relief Support"
+              >
                 <path
                   d="M24 16C21.8 12 16.5 11.5 13.5 14.5C10.5 17.5 11 23 15 27L24 35L33 27C37 23 37.5 17.5 34.5 14.5C31.5 11.5 26.2 12 24 16Z"
                   fill="#DC2626"
@@ -461,17 +411,18 @@ export default function SheltersPage() {
                 Need Help? We&apos;re Here for You
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Contact our team for support or report an emergency.
+                Contact our emergency team for support or report an evacuation
+                request.
               </p>
             </div>
           </div>
 
           <a
-            href="tel:0170000001"
+            href="tel:999"
             className="inline-flex items-center gap-2 rounded-xl bg-[#0B2545] hover:bg-[#081b33] text-white text-xs sm:text-sm font-semibold px-5 py-2.5 shadow-sm transition-colors shrink-0"
           >
             <Phone className="h-4 w-4" />
-            <span>Call 0170000001</span>
+            <span>Emergency Hotline 999</span>
           </a>
         </div>
       </main>
@@ -486,28 +437,40 @@ function ShelterCard({ shelter }: { shelter: IShelter }) {
   const imageUrl =
     shelter.images && shelter.images.length > 0 && shelter.images[0]
       ? shelter.images[0]
-      : "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80";
+      : null;
 
   const coordinatorName =
     typeof shelter.coordinator === "object" && shelter.coordinator?.name
       ? shelter.coordinator.name
       : typeof shelter.coordinator === "string"
         ? shelter.coordinator
-        : shelter.contactPerson || "Super Admin";
+        : shelter.contactPerson || "Shelter Desk";
 
-  const shelterId = shelter._id || shelter.id || "details";
+  const shelterId = shelter.id || shelter._id || "details";
 
   return (
     <article className="group flex flex-col rounded-2xl border border-slate-200/90 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       {/* Top Image Container */}
       <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-slate-900">
-        <Image
-          src={imageUrl}
-          alt={shelter.name}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={shelter.name}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 to-[#0B2545] flex flex-col items-center justify-center p-4 text-center">
+            <Building2 className="h-10 w-10 text-slate-400 mb-2" />
+            <p className="text-xs font-semibold text-slate-300">
+              {shelter.name}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {shelter.upazila}, {shelter.district}
+            </p>
+          </div>
+        )}
 
         {/* Floating Capacity Pill Badge */}
         <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 rounded-full bg-slate-950/75 backdrop-blur-md px-3 py-1 text-xs font-bold text-white shadow-md border border-white/10">
@@ -540,7 +503,9 @@ function ShelterCard({ shelter }: { shelter: IShelter }) {
           {/* Address Line with House icon */}
           <div className="mt-2.5 flex items-center gap-2 text-xs font-medium text-slate-700">
             <House className="h-3.5 w-3.5 text-slate-800 shrink-0" />
-            <span>{shelter.address || "Section 10, Block A"}</span>
+            <span className="truncate">
+              {shelter.address || `${shelter.upazila}, ${shelter.district}`}
+            </span>
           </div>
 
           {/* Stats 3-column row */}
@@ -579,13 +544,13 @@ function ShelterCard({ shelter }: { shelter: IShelter }) {
                   Contact
                 </p>
                 <p className="text-[11px] sm:text-xs font-bold text-slate-900 mt-1 truncate">
-                  {shelter.contactPhone}
+                  {shelter.contactPhone || "N/A"}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Relief Needs Items (if present) */}
+          {/* Relief Needs Items (if present in API) */}
           {shelter.reliefNeeds && shelter.reliefNeeds.length > 0 && (
             <div className="mt-4 rounded-xl bg-red-50/40 border border-red-100/70 p-2.5">
               <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
@@ -594,17 +559,19 @@ function ShelterCard({ shelter }: { shelter: IShelter }) {
               </div>
 
               <div className="mt-2 grid grid-cols-3 gap-2">
-                {shelter.reliefNeeds.map((need: IReliefNeedItem, idx: number) => {
-                  const isCritical =
-                    need.urgency === "CRITICAL" ||
-                    need.urgency?.toLowerCase().includes("crit");
-                  const isHigh =
-                    need.urgency === "HIGH" ||
-                    need.urgency?.toLowerCase().includes("high");
+                {shelter.reliefNeeds.map((need: IReliefNeedItem) => {
+                  const urgencyStr = (need.urgency || "HIGH").toUpperCase();
+                  const isCritical = urgencyStr.includes("CRIT");
+                  const isHigh = urgencyStr.includes("HIGH");
+                  const itemName = need.itemName || need.name || "Relief item";
+                  const quantityDisplay =
+                    typeof need.quantity === "number"
+                      ? `${need.quantity.toLocaleString()} ${need.unit || ""}`
+                      : need.quantity;
 
                   return (
                     <div
-                      key={need.id || `need-${idx}`}
+                      key={need.id || `${itemName}-${need.itemCategory}`}
                       className={`rounded-lg p-1.5 text-center flex flex-col justify-between items-center ${
                         isCritical
                           ? "bg-red-50/90 border border-red-100"
@@ -613,12 +580,15 @@ function ShelterCard({ shelter }: { shelter: IShelter }) {
                             : "bg-blue-50/90 border border-blue-100"
                       }`}
                     >
-                      <p className="text-[11px] font-bold text-slate-800 truncate w-full">
-                        {need.name}
+                      <p
+                        className="text-[11px] font-bold text-slate-800 truncate w-full"
+                        title={itemName}
+                      >
+                        {itemName}
                       </p>
-                      {need.quantity && (
+                      {quantityDisplay && (
                         <p className="text-[9px] text-slate-500 font-medium truncate w-full">
-                          {need.quantity}
+                          {quantityDisplay}
                         </p>
                       )}
                       <span
@@ -630,7 +600,7 @@ function ShelterCard({ shelter }: { shelter: IShelter }) {
                               : "bg-blue-500 text-white"
                         }`}
                       >
-                        {need.urgency || "HIGH"}
+                        {urgencyStr}
                       </span>
                     </div>
                   );
@@ -643,11 +613,11 @@ function ShelterCard({ shelter }: { shelter: IShelter }) {
         {/* Card Footer: Coordinator & View Details Button */}
         <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-3">
           {/* Coordinator */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
               <User className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-medium text-slate-400 leading-none">
                 Coordinator
               </p>
