@@ -35,7 +35,12 @@ import type {
 } from "@/types";
 
 const URGENCIES: UrgencyLevel[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
-const STATUSES: ReliefStatus[] = ["PENDING", "IN_PROGRESS", "FULFILLED", "CANCELLED"];
+const STATUSES: ReliefStatus[] = [
+  "PENDING",
+  "IN_PROGRESS",
+  "FULFILLED",
+  "CANCELLED",
+];
 
 export default function AdminReliefNeedsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -182,7 +187,8 @@ export default function AdminReliefNeedsPage() {
               Relief Needs Management
             </h1>
             <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-              Live disaster shelter relief demands, supply fulfillment tracking, and emergency logistics.
+              Live disaster shelter relief demands, supply fulfillment tracking,
+              and emergency logistics.
             </p>
           </div>
         </div>
@@ -229,7 +235,9 @@ export default function AdminReliefNeedsPage() {
             <span className="text-2xl font-black text-slate-900 tracking-tight">
               {stats.total}
             </span>
-            <span className="text-xs font-semibold text-slate-500">Items Listed</span>
+            <span className="text-xs font-semibold text-slate-500">
+              Items Listed
+            </span>
           </div>
         </div>
 
@@ -265,7 +273,9 @@ export default function AdminReliefNeedsPage() {
             <span className="text-2xl font-black text-slate-900 tracking-tight">
               {stats.inProgress}
             </span>
-            <span className="text-xs font-semibold text-blue-600">En Route</span>
+            <span className="text-xs font-semibold text-blue-600">
+              En Route
+            </span>
           </div>
         </div>
 
@@ -283,7 +293,9 @@ export default function AdminReliefNeedsPage() {
             <span className="text-2xl font-black text-slate-900 tracking-tight">
               {stats.fulfilledCount}
             </span>
-            <span className="text-xs font-semibold text-teal-600">Completed</span>
+            <span className="text-xs font-semibold text-teal-600">
+              Completed
+            </span>
           </div>
         </div>
 
@@ -301,7 +313,9 @@ export default function AdminReliefNeedsPage() {
             <span className="text-2xl font-black text-emerald-600 tracking-tight">
               {stats.overallRate}%
             </span>
-            <span className="text-xs font-semibold text-slate-500">Supply Met</span>
+            <span className="text-xs font-semibold text-slate-500">
+              Supply Met
+            </span>
           </div>
         </div>
       </div>
