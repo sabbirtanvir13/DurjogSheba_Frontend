@@ -16,9 +16,11 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { useCreateShelter } from "@/hooks";
+import { useCreateShelter, useUpdateShelter } from "@/hooks";
+import type { IShelter, IShelterCreateInput } from "@/types";
 
 interface CreateShelterProps {
+  initialData?: IShelter | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -120,21 +122,34 @@ const bangladeshDistricts: Record<string, string[]> = {
 };
 
 export default function CreateShelter({
+  initialData,
   onSuccess,
   onCancel,
 }: CreateShelterProps) {
-  const { mutateAsync: createShelterFn, isPending } = useCreateShelter();
+  const isEditing = Boolean(initialData);
+
+  const { mutateAsync: createShelterFn, isPending: isCreating } =
+    useCreateShelter();
+  const { mutateAsync: updateShelterFn, isPending: isUpdating } =
+    useUpdateShelter();
+  const isPending = isCreating || isUpdating;
 
   const [formData, setFormData] = useState({
-    name: "",
-    district: "",
-    upazila: "",
-    address: "",
-    capacity: "",
-    currentPeople: "0",
-    contactPerson: "",
-    contactPhone: "",
-    imageUrl: "",
+    name: initialData?.name || "",
+    district: initialData?.district || "",
+    upazila: initialData?.upazila || "",
+    address: initialData?.address || "",
+    capacity: initialData?.capacity ? String(initialData.capacity) : "",
+    currentPeople:
+      initialData?.currentPeople !== undefined
+        ? String(initialData.currentPeople)
+        : "0",
+    contactPerson: initialData?.contactPerson || "",
+    contactPhone: initialData?.contactPhone || "",
+    imageUrl:
+      initialData?.images && initialData.images.length > 0
+        ? initialData.images[0]
+        : "",
   });
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -205,6 +220,32 @@ export default function CreateShelter({
     }
 
     try {
+      if (isEditing && initialData) {
+        // Update shelter action
+        const id = String(initialData.id || initialData._id);
+        const updatePayload: Partial<IShelterCreateInput> = {
+          name: formData.name.trim(),
+          district: formData.district.trim(),
+          upazila: formData.upazila.trim(),
+          address: formData.address.trim(),
+          capacity: capNum,
+          currentPeople:
+            Number.parseInt(formData.currentPeople || "0", 10) || 0,
+          contactPerson: formData.contactPerson.trim(),
+          contactPhone: formData.contactPhone.trim(),
+        };
+
+        if (formData.imageUrl.trim()) {
+          updatePayload.images = [formData.imageUrl.trim()];
+        }
+
+        await updateShelterFn({ id, payload: updatePayload });
+        toast.success(`Shelter "${formData.name}" updated successfully!`);
+        onSuccess?.();
+        return;
+      }
+
+      // Create new shelter action
       const payload = new FormData();
       payload.append("name", formData.name.trim());
       payload.append("district", formData.district.trim());
@@ -237,10 +278,10 @@ export default function CreateShelter({
           ? (err.data as { message?: string })?.message
           : err instanceof Error
             ? err.message
-            : "Failed to create shelter";
-      toast.error(
-        errorMsg || "Failed to create shelter. Please verify details.",
-      );
+            : isEditing
+              ? "Failed to update shelter"
+              : "Failed to create shelter";
+      toast.error(errorMsg || "Operation failed. Please verify details.");
     }
   };
 
@@ -471,28 +512,29 @@ export default function CreateShelter({
           Shelter Photos (Upload or Direct Link)
         </label>
 
-        {/* Upload Zone */}
-        <label
-          htmlFor="shelter-images-input"
-          className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50/60 hover:bg-blue-50/20"
-        >
-          <UploadCloud className="h-7 w-7 text-blue-600 mb-1.5" />
-          <p className="text-xs font-semibold text-slate-700">
-            Click to upload photos{" "}
-            <span className="text-slate-400 font-normal">(Max 5 images)</span>
-          </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            PNG, JPG, WEBP up to 5MB
-          </p>
-          <input
-            id="shelter-images-input"
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </label>
+        {!isEditing && (
+          <label
+            htmlFor="shelter-images-input"
+            className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50/60 hover:bg-blue-50/20"
+          >
+            <UploadCloud className="h-7 w-7 text-blue-600 mb-1.5" />
+            <p className="text-xs font-semibold text-slate-700">
+              Click to upload photos{" "}
+              <span className="text-slate-400 font-normal">(Max 5 images)</span>
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              PNG, JPG, WEBP up to 5MB
+            </p>
+            <input
+              id="shelter-images-input"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+        )}
 
         {/* Selected Image Thumbnails */}
         {filePreviews.length > 0 && (
@@ -520,7 +562,7 @@ export default function CreateShelter({
           </div>
         )}
 
-        {/* Fallback Image URL Input */}
+        {/* Direct Image URL Input */}
         <div className="pt-1">
           <div className="relative">
             <ImageIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -536,12 +578,13 @@ export default function CreateShelter({
         </div>
       </div>
 
-      {/* Verified Notice */}
+      {/* Notice */}
       <div className="flex items-center gap-2 rounded-xl bg-blue-50/60 border border-blue-100/80 px-3.5 py-2.5 text-xs text-blue-900">
         <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
         <span>
-          Shelter will be activated immediately and published to the public
-          shelter finder.
+          {isEditing
+            ? "Changes will be reflected across public shelter directory immediately."
+            : "Shelter will be activated immediately and published to the public shelter finder."}
         </span>
       </div>
 
@@ -552,7 +595,7 @@ export default function CreateShelter({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 transition-colors disabled:opacity-50"
+            className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 transition-colors disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -560,15 +603,17 @@ export default function CreateShelter({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2545] hover:bg-[#081b33] text-white font-bold text-xs px-6 py-2.5 shadow-md shadow-[#0B2545]/20 transition-all hover:shadow-lg disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2545] hover:bg-[#081b33] text-white font-bold text-xs px-6 py-2.5 shadow-md shadow-[#0B2545]/20 transition-all hover:shadow-lg disabled:opacity-60 cursor-pointer"
         >
           {isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Publishing Shelter...</span>
+              <span>
+                {isEditing ? "Updating Shelter..." : "Publishing Shelter..."}
+              </span>
             </>
           ) : (
-            <span>Publish Shelter</span>
+            <span>{isEditing ? "Save Changes" : "Publish Shelter"}</span>
           )}
         </button>
       </div>

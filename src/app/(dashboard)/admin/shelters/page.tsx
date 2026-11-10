@@ -10,6 +10,7 @@ import {
   House,
   Loader2,
   MapPin,
+  Pencil,
   Phone,
   Plus,
   RefreshCw,
@@ -41,6 +42,7 @@ export default function AdminShelterPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [shelterToEdit, setShelterToEdit] = useState<IShelter | null>(null);
   const [shelterToDelete, setShelterToDelete] = useState<IShelter | null>(null);
 
   const { data: apiData, isPending, refetch } = useGetShelters();
@@ -135,7 +137,7 @@ export default function AdminShelterPage() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 shadow-xs transition-colors"
+            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 shadow-xs transition-colors cursor-pointer"
             title="Refresh list"
           >
             <RefreshCw
@@ -146,7 +148,7 @@ export default function AdminShelterPage() {
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0B2545] hover:bg-[#081b33] text-white font-bold text-xs sm:text-sm px-4.5 py-2.5 shadow-md shadow-[#0B2545]/20 transition-all hover:shadow-lg hover:-translate-y-0.5 shrink-0"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#0B2545] hover:bg-[#081b33] text-white font-bold text-xs sm:text-sm px-4.5 py-2.5 shadow-md shadow-[#0B2545]/20 transition-all hover:shadow-lg hover:-translate-y-0.5 shrink-0 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Create Shelter</span>
@@ -287,7 +289,7 @@ export default function AdminShelterPage() {
                   setSearchTerm("");
                   setSelectedDistrict("");
                 }}
-                className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors"
+                className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Reset Filters
               </button>
@@ -295,7 +297,7 @@ export default function AdminShelterPage() {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(true)}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#0B2545] px-4 py-2 text-xs font-bold text-white hover:bg-[#081b33] transition-colors"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#0B2545] px-4 py-2 text-xs font-bold text-white hover:bg-[#081b33] transition-colors cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Add First Shelter</span>
@@ -322,8 +324,11 @@ export default function AdminShelterPage() {
                   <th scope="col" className="px-4 py-3.5">
                     Relief Needs
                   </th>
-                  <th scope="col" className="px-5 py-3.5 text-right">
-                    Actions
+                  <th
+                    scope="col"
+                    className="px-5 py-3.5 text-right min-w-[210px]"
+                  >
+                    Actions (Update / Delete)
                   </th>
                 </tr>
               </thead>
@@ -373,10 +378,10 @@ export default function AdminShelterPage() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-bold text-slate-900 truncate max-w-[200px] sm:max-w-[240px]">
+                            <p className="font-bold text-slate-900 truncate max-w-[180px] sm:max-w-[220px]">
                               {shelter.name}
                             </p>
-                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">
                               <House className="h-3 w-3 shrink-0 text-slate-400" />
                               <span className="truncate">
                                 {shelter.address || "No address specified"}
@@ -395,7 +400,7 @@ export default function AdminShelterPage() {
                       </td>
 
                       {/* Column 3: Capacity & Progress */}
-                      <td className="px-4 py-4 min-w-[170px]">
+                      <td className="px-4 py-4 min-w-[160px]">
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-slate-800">
@@ -465,27 +470,40 @@ export default function AdminShelterPage() {
                         )}
                       </td>
 
-                      {/* Column 6: Actions */}
+                      {/* Column 6: Actions (View, Update/Edit, Delete) */}
                       <td className="px-5 py-4 whitespace-nowrap text-right">
-                        <div className="inline-flex items-center gap-2">
-                          {/* Public Details View Link */}
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          {/* 1. Public Details View */}
                           <Link
                             href={`/shelters/${shelterId}`}
                             target="_blank"
-                            className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
                             title="View Public Details"
                           >
-                            <ExternalLink className="h-3.5 w-3.5" />
+                            <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                            <span className="hidden xl:inline">View</span>
                           </Link>
 
-                          {/* Delete Action Button */}
+                          {/* 2. UPDATE / EDIT BUTTON */}
+                          <button
+                            type="button"
+                            onClick={() => setShelterToEdit(shelter)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                            title="Update Shelter"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            <span>Update</span>
+                          </button>
+
+                          {/* 3. DELETE BUTTON */}
                           <button
                             type="button"
                             onClick={() => setShelterToDelete(shelter)}
-                            className="p-1.5 rounded-lg border border-red-100 bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 bg-red-50/70 hover:bg-red-100 text-red-700 text-xs font-bold shadow-xs transition-colors cursor-pointer"
                             title="Delete Shelter"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </td>
@@ -531,7 +549,7 @@ export default function AdminShelterPage() {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
                 title="Close"
               >
                 <X className="h-4 w-4" />
@@ -543,6 +561,57 @@ export default function AdminShelterPage() {
               <CreateShelter
                 onSuccess={() => setIsCreateOpen(false)}
                 onCancel={() => setIsCreateOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP MODAL: Update Existing Shelter Form */}
+      {shelterToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          {/* Backdrop Blur Overlay */}
+          <button
+            type="button"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-in fade-in cursor-default w-full h-full border-none p-0"
+            onClick={() => setShelterToEdit(null)}
+            aria-label="Close modal overlay"
+          />
+
+          {/* Modal Content Box */}
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-[#0B2545] text-white px-6 py-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white border border-white/10">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-extrabold tracking-tight">
+                    Update Shelter: {shelterToEdit.name}
+                  </h2>
+                  <p className="text-xs text-slate-300">
+                    Modify capacity, location, contact, or operational status.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShelterToEdit(null)}
+                className="h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <div className="p-6 overflow-y-auto">
+              <CreateShelter
+                initialData={shelterToEdit}
+                onSuccess={() => setShelterToEdit(null)}
+                onCancel={() => setShelterToEdit(null)}
               />
             </div>
           </div>
@@ -589,7 +658,7 @@ export default function AdminShelterPage() {
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setShelterToDelete(null)}
-                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 transition-colors disabled:opacity-50"
+                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
@@ -597,7 +666,7 @@ export default function AdminShelterPage() {
                 type="button"
                 disabled={isDeleting}
                 onClick={handleDeleteConfirm}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-5 py-2.5 shadow-md shadow-red-600/20 transition-colors disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-5 py-2.5 shadow-md shadow-red-600/20 transition-colors disabled:opacity-60 cursor-pointer"
               >
                 {isDeleting ? (
                   <>

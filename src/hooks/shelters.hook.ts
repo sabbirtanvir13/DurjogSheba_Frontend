@@ -4,6 +4,7 @@ import {
   deleteShelter,
   getAllShelters,
   getShelterById,
+  updateShelter,
 } from "@/api/shelters.api";
 import type { IShelterCreateInput, IShelterFilterRequest } from "@/types";
 
@@ -29,6 +30,23 @@ export function useCreateShelter() {
       createShelter(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shelters"] });
+    },
+  });
+}
+
+export function useUpdateShelter() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<IShelterCreateInput>;
+    }) => updateShelter(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shelters"] });
+      queryClient.invalidateQueries({ queryKey: ["shelter"] });
     },
   });
 }

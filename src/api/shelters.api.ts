@@ -25,6 +25,16 @@ export function createShelter(payload: FormData | IShelterCreateInput) {
   });
 }
 
+export function updateShelter(
+  id: string,
+  payload: Partial<IShelterCreateInput>,
+) {
+  return apiClient<IShelterApiResponse>(`/shelters/${id}`, {
+    method: "PATCH",
+    body: payload,
+  });
+}
+
 export function deleteShelter(id: string) {
   return apiClient<IShelterApiResponse>(`/shelters/${id}`, {
     method: "DELETE",
