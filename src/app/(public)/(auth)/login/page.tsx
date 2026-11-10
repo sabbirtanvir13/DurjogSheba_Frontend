@@ -437,40 +437,55 @@ function LoginContent() {
             {/* ========================================= */}
             {/* 3 DEMO ACCOUNTS: Donor, Volunteer, Admin */}
             {/* ========================================= */}
-            <div className="mt-6 border-t border-slate-200/90 pt-5">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                  <Sparkles className="h-4 w-4 text-emerald-700" />
-                  <span>Demo Login (Click to Test)</span>
+            <div className="mt-6 rounded-2xl border border-slate-200/90 bg-gradient-to-b from-slate-50/70 to-slate-100/40 p-4 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-2xs">
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 leading-tight">
+                      Instant Demo Logins
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Explore the platform as any user role
+                    </p>
+                  </div>
                 </div>
-                <span className="text-[10px] font-medium text-slate-400">
-                  One-click auto-fill
+                <span className="inline-flex items-center rounded-full bg-emerald-100/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                  ⚡ 1-Click Access
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2.5">
                 {/* 1. DONOR DEMO */}
                 <button
                   type="button"
                   disabled={loginPending}
                   onClick={() => handleDemoLogin("DONOR")}
-                  className="group relative flex flex-col items-start rounded-xl border border-pink-200/80 bg-pink-50/40 p-2.5 text-left transition hover:border-pink-300 hover:bg-pink-50/90 hover:shadow-2xs disabled:opacity-50"
+                  className="group relative flex flex-col items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-pink-300 hover:bg-pink-50/30 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-pink-700">
-                      <Heart className="h-3 w-3 fill-pink-600 text-pink-600" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-50 text-pink-600 border border-pink-100 transition-transform group-hover:scale-105">
+                    <Heart className="h-4 w-4 fill-pink-600 text-pink-600" />
+                  </div>
+                  <div className="mt-2 space-y-0.5">
+                    <p className="text-xs font-bold text-slate-800 transition-colors group-hover:text-pink-700">
                       Donor
-                    </span>
-                    {activeDemoRole === "DONOR" && (
-                      <Loader2 className="h-3 w-3 animate-spin text-pink-600" />
+                    </p>
+                    <p className="text-[10px] font-medium text-slate-400">
+                      Relief Funder
+                    </p>
+                  </div>
+                  <div className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg bg-slate-100 py-1 text-[10px] font-bold text-slate-600 transition-colors group-hover:bg-pink-600 group-hover:text-white">
+                    {activeDemoRole === "DONOR" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <span>Enter</span>
+                        <ArrowRight className="h-2.5 w-2.5" />
+                      </>
                     )}
                   </div>
-                  <p className="mt-1 text-[10px] font-mono text-slate-600 truncate w-full">
-                    donor@...
-                  </p>
-                  <span className="mt-1.5 text-[10px] font-bold text-pink-700 group-hover:underline">
-                    Login →
-                  </span>
                 </button>
 
                 {/* 2. VOLUNTEER DEMO */}
@@ -478,23 +493,29 @@ function LoginContent() {
                   type="button"
                   disabled={loginPending}
                   onClick={() => handleDemoLogin("VOLUNTEER")}
-                  className="group relative flex flex-col items-start rounded-xl border border-blue-200/80 bg-blue-50/40 p-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50/90 hover:shadow-2xs disabled:opacity-50"
+                  className="group relative flex flex-col items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700">
-                      <LifeBuoy className="h-3 w-3 text-blue-600" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100 transition-transform group-hover:scale-105">
+                    <LifeBuoy className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="mt-2 space-y-0.5">
+                    <p className="text-xs font-bold text-slate-800 transition-colors group-hover:text-blue-700">
                       Volunteer
-                    </span>
-                    {activeDemoRole === "VOLUNTEER" && (
-                      <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                    </p>
+                    <p className="text-[10px] font-medium text-slate-400">
+                      Rescue Squad
+                    </p>
+                  </div>
+                  <div className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg bg-slate-100 py-1 text-[10px] font-bold text-slate-600 transition-colors group-hover:bg-blue-600 group-hover:text-white">
+                    {activeDemoRole === "VOLUNTEER" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <span>Enter</span>
+                        <ArrowRight className="h-2.5 w-2.5" />
+                      </>
                     )}
                   </div>
-                  <p className="mt-1 text-[10px] font-mono text-slate-600 truncate w-full">
-                    volunteer@...
-                  </p>
-                  <span className="mt-1.5 text-[10px] font-bold text-blue-700 group-hover:underline">
-                    Login →
-                  </span>
                 </button>
 
                 {/* 3. ADMIN DEMO */}
@@ -502,25 +523,36 @@ function LoginContent() {
                   type="button"
                   disabled={loginPending}
                   onClick={() => handleDemoLogin("ADMIN")}
-                  className="group relative flex flex-col items-start rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-2.5 text-left transition hover:border-emerald-300 hover:bg-emerald-50/90 hover:shadow-2xs disabled:opacity-50"
+                  className="group relative flex flex-col items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50/30 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800">
-                      <ShieldAlert className="h-3 w-3 text-emerald-700" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 transition-transform group-hover:scale-105">
+                    <ShieldAlert className="h-4 w-4 text-emerald-700" />
+                  </div>
+                  <div className="mt-2 space-y-0.5">
+                    <p className="text-xs font-bold text-slate-800 transition-colors group-hover:text-emerald-800">
                       Admin
-                    </span>
-                    {activeDemoRole === "ADMIN" && (
-                      <Loader2 className="h-3 w-3 animate-spin text-emerald-700" />
+                    </p>
+                    <p className="text-[10px] font-medium text-slate-400">
+                      HQ Control
+                    </p>
+                  </div>
+                  <div className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg bg-slate-100 py-1 text-[10px] font-bold text-slate-600 transition-colors group-hover:bg-emerald-700 group-hover:text-white">
+                    {activeDemoRole === "ADMIN" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <span>Enter</span>
+                        <ArrowRight className="h-2.5 w-2.5" />
+                      </>
                     )}
                   </div>
-                  <p className="mt-1 text-[10px] font-mono text-slate-600 truncate w-full">
-                    admin@...
-                  </p>
-                  <span className="mt-1.5 text-[10px] font-bold text-emerald-800 group-hover:underline">
-                    Login →
-                  </span>
                 </button>
               </div>
+
+              <p className="mt-2.5 text-center text-[10px] text-slate-400">
+                Click any role to auto-authenticate and access its live
+                dashboard
+              </p>
             </div>
 
             <p className="mt-5 text-center text-xs text-slate-600">
