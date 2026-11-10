@@ -57,4 +57,3 @@ export interface IRescueApiResponse<T = IRescueRequest[]> {
   message: string;
   data: T;
 }
-

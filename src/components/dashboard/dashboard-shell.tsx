@@ -1,12 +1,12 @@
+import type { ReactNode } from "react";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import type { UserRole } from "@/types";
 import { DashboardSidebar } from "./dashboard-sidebar";
-import { ReactNode } from "react";
-import { UserRole } from "@/types";
 
 export interface DashboardShellProps {
   children: ReactNode;

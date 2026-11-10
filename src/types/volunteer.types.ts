@@ -11,4 +11,3 @@ export interface IVolunteerStatsResponse {
   message: string;
   data: IVolunteerStats;
 }
-

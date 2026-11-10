@@ -1,11 +1,11 @@
 "use client";
 
-import * as React from "react";
+import { ExternalLink, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, LogOut } from "lucide-react";
-
+import type * as React from "react";
+import { toast } from "react-toastify";
 import {
   Sidebar,
   SidebarContent,
@@ -22,10 +22,9 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useGetMe, useLogout } from "@/hooks";
-import { toast } from "react-toastify";
 import { cn } from "@/lib/utils";
-import { UserRole } from "@/types";
 import { getRoutesByRole } from "@/routes";
+import type { UserRole } from "@/types";
 
 export interface DashboardSidebarProps
   extends React.ComponentProps<typeof Sidebar> {
@@ -51,8 +50,11 @@ export function DashboardSidebar({
       onSuccess: () => {
         toast.success("Logged out successfully");
       },
-      onError: (err: any) => {
-        toast.error(err?.data?.message || err?.message || "Logout failed");
+      onError: (err: unknown) => {
+        const apiErr = err as { data?: { message?: string }; message?: string };
+        toast.error(
+          apiErr?.data?.message || apiErr?.message || "Logout failed",
+        );
       },
     });
   };
@@ -118,13 +120,13 @@ export function DashboardSidebar({
                           "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 min-h-[38px] text-xs font-medium transition-all duration-150",
                           isActive
                             ? "bg-green-700 font-semibold text-white shadow-xs hover:bg-green-800 hover:text-white"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                         )}
                       >
                         <Icon
                           className={cn(
                             "h-4 w-4 shrink-0",
-                            isActive ? "text-white" : "text-slate-500"
+                            isActive ? "text-white" : "text-slate-500",
                           )}
                         />
                         <span className="truncate">{item.title}</span>
@@ -134,7 +136,7 @@ export function DashboardSidebar({
                         <SidebarMenuBadge
                           className={cn(
                             "rounded px-1.5 py-0.5 text-[10px] group-data-[collapsible=icon]:hidden",
-                            item.badgeClass
+                            item.badgeClass,
                           )}
                         >
                           {item.badge}

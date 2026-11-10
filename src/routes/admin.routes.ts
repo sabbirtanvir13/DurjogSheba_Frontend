@@ -1,12 +1,10 @@
 import {
   BarChart3,
   Building2,
-  ExternalLink,
   HandHeart,
   HeartHandshake,
   LayoutDashboard,
   LifeBuoy,
-  LogOut,
   Megaphone,
   PackageCheck,
   Siren,
@@ -88,7 +86,8 @@ export const adminRoutes = [
         url: `${prefix}/alerts`,
         icon: Siren,
         badge: "Urgent",
-        badgeClass: "bg-amber-50 text-amber-700 border border-amber-200/80 font-bold",
+        badgeClass:
+          "bg-amber-50 text-amber-700 border border-amber-200/80 font-bold",
       },
       {
         title: "My Profile",
